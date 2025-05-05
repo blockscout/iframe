@@ -167,7 +167,7 @@ export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
         const transactions = (msg.data.params as { txs: Transaction[] }).txs.map(
           // remove maxFeePerGas and maxPriorityFeePerGas from txs because they cause an error sometimes
           ({ to, maxFeePerGas, maxPriorityFeePerGas, ...rest }) => ({ // eslint-disable-line @typescript-eslint/no-unused-vars
-            to: getAddress(to), // checksummed
+            to: to ? getAddress(to) : null, // checksummed
             ...rest,
           })
         );
