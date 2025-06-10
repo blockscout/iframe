@@ -1,7 +1,7 @@
 {
   "name": "dappscout-iframe",
   "description": "A set of context and hook for an iframe that allows interaction with dApps using a connected wallet.",
-  "version": "0.2.6",
+  "version": "0.3.0",
   "author": "Maksim Alekseenko (https://github.com/maxaleks)",
   "contributors": [
     "Apoorv Lathey <apoorv.xyz>"
@@ -25,14 +25,14 @@
     "postpack": "clean-package restore"
   },
   "dependencies": {
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
     "viem": "^1.20.3"
   },
   "devDependencies": {
     "@types/node": "^20.9.0",
-    "@types/react": "18.3.12",
-    "@types/react-dom": "18.3.1",
+    "@types/react": "19.1.7",
+    "@types/react-dom": "19.1.6",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "@vitejs/plugin-react": "^4.0.3",
@@ -45,8 +45,8 @@
     "vite-plugin-dts": "^3.6.3"
   },
   "peerDependencies": {
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "viem": "^1.20.3"
   },
   "files": [

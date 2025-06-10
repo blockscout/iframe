@@ -26,7 +26,7 @@ import {
 } from "../../types";
 
 type SafeInjectContextType = {
-  iframeRef: React.RefObject<HTMLIFrameElement> | null;
+  iframeRef: React.RefObject<HTMLIFrameElement | null> | null;
   isReady: boolean;
 };
 
