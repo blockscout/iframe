@@ -74,6 +74,7 @@ export enum Methods {
   requestAddressBook = "requestAddressBook",
   wallet_getPermissions = "wallet_getPermissions",
   wallet_requestPermissions = "wallet_requestPermissions",
+  wallet_switchEthereumChain = "wallet_switchEthereumChain",
 }
 export declare type SDKRequestData<M extends Methods = Methods, P = unknown> = {
   id: RequestId;
@@ -459,6 +460,9 @@ export interface MethodToResponse {
   [Methods.requestAddressBook]: AddressBookItem[];
   [Methods.wallet_getPermissions]: Permission[];
   [Methods.wallet_requestPermissions]: Permission[];
+  [Methods.wallet_switchEthereumChain]: {
+    chainId: string;
+  };
 }
 export declare type ErrorResponse = {
   id: RequestId;

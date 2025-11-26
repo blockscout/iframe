@@ -43,10 +43,11 @@ interface IframeProps {
   sendTransaction?: (tx: Transaction) => Promise<string>;
   signMessage?: (message: string) => Promise<string>;
   signTypedData?: (typedData: EIP712TypedData) => Promise<string>;
+  switchChain?: (chainId: number) => Promise<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
-  children, address, appUrl, rpcUrl, sendTransaction, signMessage, signTypedData,
+  children, address, appUrl, rpcUrl, sendTransaction, signMessage, signTypedData, switchChain,
 }) => {
   const [publicClient, setPublicClient] = useState<PublicClient>();
   const [isReady, setIsReady] = useState<boolean>(false);
@@ -121,6 +122,7 @@ export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
     communicator?.on(Methods.rpcCall, async (msg) => {
       console.log("communicator.rpcCall", msg);
       const params = msg.data.params as RPCPayload;
+      const chainId = await publicClient.getChainId();
       try {
         const response = (await publicClient.request({
           method: params.call,
@@ -201,10 +203,19 @@ export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
       }
     });
 
+    communicator?.on(Methods.wallet_switchEthereumChain, async (msg) => {
+      try {
+        const { chainId } = msg.data.params as { chainId: number };
+        return switchChain?.(chainId);
+      } catch (err) {
+        onTxReject(msg.data.id as string);
+      }
+    });
+
     setIsReady(true);
   }, [
     communicator, address, publicClient, onUserTxConfirm, onTxReject,
-    sendTransaction, signMessage, signTypedData, chainId,
+    sendTransaction, signMessage, signTypedData, chainId, switchChain,
   ]);
 
   return (
