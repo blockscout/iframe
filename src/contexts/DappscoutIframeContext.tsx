@@ -39,6 +39,7 @@ interface IframeProps {
   children: React.ReactNode;
   address?: string;
   appUrl?: string;
+  chainId?: number;
   rpcUrl?: string;
   sendTransaction?: (tx: Transaction) => Promise<string>;
   signMessage?: (message: string) => Promise<string>;
@@ -47,11 +48,12 @@ interface IframeProps {
 }
 
 export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
-  children, address, appUrl, rpcUrl, sendTransaction, signMessage, signTypedData, switchChain,
+  children, address, appUrl, chainId, rpcUrl,
+  sendTransaction, signMessage, signTypedData, switchChain,
 }) => {
   const [publicClient, setPublicClient] = useState<PublicClient>();
   const [isReady, setIsReady] = useState<boolean>(false);
-  const [chainId, setChainId] = useState<number>();
+  const [hasChainConflict, setHasChainConflict] = useState<boolean>(true);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const communicator = useAppCommunicator(iframeRef);
@@ -92,22 +94,39 @@ export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
   }, [communicator, sendMessageToIFrame]);
 
   useEffect(() => {
-    if (!rpcUrl) return;
-
-    const publicClient = createPublicClient({ transport: http(rpcUrl) });
-    setPublicClient(publicClient);
-
-    async function getChainId() {
-      const chainId = await publicClient.getChainId();
-      setChainId(chainId);
+    if (!rpcUrl || !chainId) {
+      setPublicClient(undefined);
+      setHasChainConflict(true);
+      return;
     }
-    getChainId();
-  }, [rpcUrl]);
+
+    const client = createPublicClient({ transport: http(rpcUrl) });
+    setPublicClient(client);
+    setHasChainConflict(false);
+
+    (async () => {
+      try {
+        const rpcChainId = await client.getChainId();
+        if (rpcChainId !== chainId) {
+          console.error(
+            `[DappscoutIframeProvider] Provided chainId ${chainId} differs from RPC chainId ${rpcChainId}.`
+          );
+          setHasChainConflict(true);
+        }
+      } catch (err) {
+        console.error("[DappscoutIframeProvider] Failed to validate chainId", err);
+        setHasChainConflict(true);
+      }
+    })();
+  }, [rpcUrl, chainId]);
 
   useEffect(() => {
-    if (!publicClient || !chainId) return;
+    if (!publicClient || !communicator || !chainId || hasChainConflict) {
+      setIsReady(false);
+      return;
+    }
 
-    communicator?.on(Methods.getSafeInfo, async () => ({
+    communicator.on(Methods.getSafeInfo, async () => ({
       safeAddress: address,
       chainId: chainId,
       owners: [],
@@ -115,14 +134,13 @@ export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
       isReadOnly: false,
     }));
 
-    communicator?.on(Methods.getEnvironmentInfo, async () => ({
+    communicator.on(Methods.getEnvironmentInfo, async () => ({
       origin: document.location.origin,
     }));
 
-    communicator?.on(Methods.rpcCall, async (msg) => {
+    communicator.on(Methods.rpcCall, async (msg) => {
       console.log("communicator.rpcCall", msg);
       const params = msg.data.params as RPCPayload;
-      const chainId = await publicClient.getChainId();
       try {
         const response = (await publicClient.request({
           method: params.call,
@@ -134,7 +152,7 @@ export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
       }
     });
 
-    communicator?.on(Methods.getTxBySafeTxHash, async (msg) => {
+    communicator.on(Methods.getTxBySafeTxHash, async (msg) => {
       console.log("communicator.getTxBySafeTxHash", msg);
       const { safeTxHash } = msg.data.params as { safeTxHash: Hash };
 
@@ -163,7 +181,7 @@ export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
       return response;
     });
 
-    communicator?.on(Methods.sendTransactions, async (msg) => {
+    communicator.on(Methods.sendTransactions, async (msg) => {
       console.log("communicator.sendTransactions", msg);
       try {
         const transactions = (msg.data.params as { txs: Transaction[] }).txs.map(
@@ -180,7 +198,7 @@ export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
       }
     });
 
-    communicator?.on(Methods.signMessage, async (msg) => {
+    communicator.on(Methods.signMessage, async (msg) => {
       console.log("communicator.signMessage", msg);
       try {
         const { message } = msg.data.params as SignMessageParams;
@@ -192,7 +210,7 @@ export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
       }
     });
 
-    communicator?.on(Methods.signTypedMessage, async (msg) => {
+    communicator.on(Methods.signTypedMessage, async (msg) => {
       console.log("communicator.signTypedMessage", msg);
       try {
         const { typedData } = msg.data.params as SignTypedMessageParams;
@@ -203,7 +221,7 @@ export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
       }
     });
 
-    communicator?.on(Methods.wallet_switchEthereumChain, async (msg) => {
+    communicator.on(Methods.wallet_switchEthereumChain, async (msg) => {
       try {
         const { chainId } = msg.data.params as { chainId: number };
         return switchChain?.(chainId);
@@ -213,9 +231,14 @@ export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
     });
 
     setIsReady(true);
+
+    return () => {
+      setIsReady(false);
+    };
   }, [
     communicator, address, publicClient, onUserTxConfirm, onTxReject,
-    sendTransaction, signMessage, signTypedData, chainId, switchChain,
+    sendTransaction, signMessage, signTypedData, switchChain,
+    chainId, hasChainConflict,
   ]);
 
   return (
@@ -225,5 +248,6 @@ export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useDappscoutIframe = () =>
   useContext(DappscoutIframeContext);
