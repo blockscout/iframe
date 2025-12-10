@@ -8,7 +8,7 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { http, getAddress, createPublicClient, PublicClient, Hash, isHex, fromHex } from "viem";
+import { http, getAddress, createPublicClient, PublicClient, Hash, isHex, fromHex, hexToNumber } from "viem";
 import { useAppCommunicator } from "../../helpers/communicator";
 import {
   InterfaceMessageIds,
@@ -223,8 +223,8 @@ export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
 
     communicator.on(Methods.wallet_switchEthereumChain, async (msg) => {
       try {
-        const { chainId } = msg.data.params as { chainId: number };
-        await switchChain?.(chainId);
+        const { chainId } = msg.data.params as { chainId: `0x${string}` };
+        await switchChain?.(hexToNumber(chainId));
         onUserTxConfirm({ chainId }, msg.data.id as string);
       } catch (err) {
         onTxReject(msg.data.id as string);
