@@ -61,7 +61,6 @@ class AppCommunicator {
           sdkVersion
         )
       : MessageFormatter.makeResponse(requestId, data, sdkVersion);
-    // console.log("send", { msg });
     this.iframeRef.current?.contentWindow?.postMessage(msg, "*");
   };
 

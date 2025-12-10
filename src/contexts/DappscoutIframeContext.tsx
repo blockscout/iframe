@@ -224,7 +224,8 @@ export const DappscoutIframeProvider: React.FunctionComponent<IframeProps> = ({
     communicator.on(Methods.wallet_switchEthereumChain, async (msg) => {
       try {
         const { chainId } = msg.data.params as { chainId: number };
-        return switchChain?.(chainId);
+        await switchChain?.(chainId);
+        onUserTxConfirm({ chainId }, msg.data.id as string);
       } catch (err) {
         onTxReject(msg.data.id as string);
       }
